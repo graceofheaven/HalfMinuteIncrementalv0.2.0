@@ -54,7 +54,7 @@ function wiferankIII() {
     else return 1;
 }
 function timeout() {
-    if (game.timer == 0 && gold.lte(prayer_cost)) {
+    if (game.timer == 0 && gold.lte(prayer_cost)&&prestigeT1_MS.platinum_obtained[0]==false) {
         if (platinum.eq(0)) {
         reset_game();
         }else {
