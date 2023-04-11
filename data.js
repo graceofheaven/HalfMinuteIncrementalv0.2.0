@@ -273,12 +273,21 @@ var prayer = {
         
          if (gold.gte(prayer_cost)) {
                 gold= gold.sub(prayer_cost)
-                prayer_cost= this.escalation(prayer_cost);
+                
                 if (achievement.obtained[0][2] == false) {
                     achievement.obtained[0][2] = true;
                     display.updateAchievementNotification(0,2);
                     display.updateAchievement();
+                }//
+                ac35_count = 0
+                if (prayer_cost.gte(1e100)) {
+                    ac35_count++;
+                    if (ac35_count>=5) {
+                        achievement.obtained[2][4] = true;
+                    }
+                    
                 }
+                prayer_cost= this.escalation(prayer_cost);
                 this.reverseTime()
                 display.updateGold();
                 display.updatePrayer()
@@ -310,7 +319,7 @@ var prayer = {
             this.danger = 1;
 
         }else if(getGPS().gte("1e1200")){
-            this.danger = gold.add(1).log(10).add(1).log(2).div(10).floor().add(1).toFixed(0);
+            this.danger = 2;
 
         }
         
@@ -1603,13 +1612,14 @@ var achievement = {
             function(){if (prayer_cost.gte("1e1000")) {return true} else return false},
 
             function(){if (prayer.total_prayer_count(1).gte(5)) {return true} else return false},
-            function(){if (prestigeT1_MS.platinum_obtained[10]==true){return true} else return false},
+            function(){if (gold.eq("Infinity")){return true} else return false},
             function(){if (reboot_decimal(diplomacy.relationship_lvl[0]).gte(2)) {return true} else return false},
             function(){if (wife_determination.gte(200) && bloodline.total_interact_time().gte(200) ) {return true} else return false},
 
 
         ],
     ],
+    
     //achievement bonus
     achievement_bonus06:function() {
         if (achievement.obtained[0][6] == true) {
