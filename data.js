@@ -53,6 +53,17 @@ function wiferankIII() {
     else if (wife.level>=2) {return 30-game.timer}
     else return 1;
 }
+function timeout() {
+    if (game.timer == 0 && gold.lte(prayer_cost)) {
+        if (platinum.eq(0)) {
+        reset_game();
+        }else {
+            prestigeT1.resetT1();
+        }
+
+    }
+    
+}
 
 function k_seps(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
@@ -649,7 +660,7 @@ var bloodline = {
     },
     interact_bonus:function(index) {
         count = new Decimal(this.interact_time[index]);
-        return count.div(100).add(1);
+        return count.mul(achievement.achievement_bonus21()).div(100).add(1);
     },
     interact:function(index) {
         if (this.wait_timer[index]<=0) {
@@ -670,7 +681,7 @@ var bloodline = {
     },
     heir_bonus:function(index) {
         if (index == 1) {
-            return ", opportunity gain.";
+            return ", opportunity and relationship gain";
         }
         return "";
     },
@@ -1228,26 +1239,26 @@ var diplomacy = {
     ],
     all_diplomacy_strengthen: function() {
         
-        for (i=0;i<diplomacy.name.length;i++) {
-            diplomacy.relationship[i] =reboot_decimal(diplomacy.relationship[i]);
-            diplomacy.relationship_lvl[i] = reboot_decimal(diplomacy.relationship_lvl[i]);
-            diplomacy.lvl_up_cost[i] = reboot_decimal(diplomacy.lvl_up_cost[i])
+        for (dsi=0;dsi<diplomacy.name.length;dsi++) {
+            diplomacy.relationship[dsi] =reboot_decimal(diplomacy.relationship[dsi]);
+            diplomacy.relationship_lvl[dsi] = reboot_decimal(diplomacy.relationship_lvl[dsi]);
+            diplomacy.lvl_up_cost[dsi] = reboot_decimal(diplomacy.lvl_up_cost[dsi])
 
 
-            if (diplomacy.unlock[i]==true) {
-                diplomacy.relationship[i] = diplomacy.relationship[i].add(this.getDPS(i));
+            if (diplomacy.unlock[dsi]==true) {
+                diplomacy.relationship[dsi] = diplomacy.relationship[dsi].add(this.getDPS(dsi));
             }
             
-            if (reboot_decimal(diplomacy.relationship[i]).gte(diplomacy.lvl_up_cost[i])) {
-                while(diplomacy.relationship[i].gte(diplomacy.lvl_up_cost[i])) {
-                    diplomacy.relationship_lvl[i]=diplomacy.relationship_lvl[i].add(1);
-                    diplomacy.lvl_up_cost[i]=diplomacy.lvl_up_cost[i].pow(2);
+            if (reboot_decimal(diplomacy.relationship[dsi]).gte(diplomacy.lvl_up_cost[dsi])) {
+                while(diplomacy.relationship[dsi].gte(diplomacy.lvl_up_cost[dsi])) {
+                    diplomacy.relationship_lvl[dsi]=reboot_decimal(diplomacy.relationship_lvl[dsi]).add(1);
+                    diplomacy.lvl_up_cost[dsi]=reboot_decimal(diplomacy.lvl_up_cost[dsi]).pow(2);
                 }
             }
-            if (reboot_decimal(diplomacy.relationship_lvl[i]).gte(diplomacy.lvl_req[diplomacy.faction_req_counter[i]])) {
-                if (diplomacy.faction_req_counter[i] < diplomacy.lvl_req.length) {
-                    diplomacy.bonus_check[i][diplomacy.faction_req_counter[i]] == true;
-                    diplomacy.faction_req_counter[i]++;
+            if (reboot_decimal(diplomacy.relationship_lvl[dsi]).gte(diplomacy.lvl_req[diplomacy.faction_req_counter[dsi]])) {
+                if (diplomacy.faction_req_counter[dsi] < diplomacy.lvl_req.length) {
+                    diplomacy.bonus_check[dsi][diplomacy.faction_req_counter[dsi]] = true;
+                    diplomacy.faction_req_counter[dsi]++;
                 }
             }
         }
@@ -1255,7 +1266,7 @@ var diplomacy = {
     },
     getDPS:function(index) {
         temp_income = new Decimal(diplomacy.income[index]);
-        return temp_income.mul(reboot_decimal(1).add(this.opportunity_gain().log10())).round();
+        return temp_income.mul(reboot_decimal(1).add(this.opportunity_gain().log10())).pow(bloodline.Lucia_bonus()).round();
     },
     count_unlock:function() {
         check_count = 0;
@@ -1434,7 +1445,7 @@ var achievement = {
             false,false,true,false],
         [false,true,false,false,
             true,true,true,true],
-        [false,false,false,false,
+        [false,true,false,false,
             false,false,false,false] 
             
     ],
@@ -1496,7 +1507,7 @@ var achievement = {
         ],
         [
             "",
-            "",
+            "Reward: Interact bonus is increased from 0.01 to 0.011",
             "",
             "",
     
@@ -1537,12 +1548,12 @@ var achievement = {
             function(){return achievement.achievement_bonus17()},//7
         ],
         [function(){return 1},//0
-            function(){return 1},
+            function(){return achievement.achievement_bonus21()},
             function(){return 1},
             function(){return 1},//3
             function(){return 1},
             function(){return 1},
-            function(){return achievement.achievement_bonus06()},//6
+            function(){return 1},//6
             function(){return 1}],//7
     
     ],
@@ -1552,7 +1563,7 @@ var achievement = {
         ],
         ["","*","","",
         "*","*","*","^"],
-        ["","","","",
+        ["","*","","",
         "","","",""
         ],
 
@@ -1567,7 +1578,7 @@ var achievement = {
             "Misc","GPS","Misc","GPS"
         ],
         [
-            "","","","",
+            "","Misc","","",
             "","","","",
         ],
 
@@ -1654,6 +1665,13 @@ var achievement = {
                 return 1;
             }
             return gold.add(1).log10().add(1).log10().div(8).mul(time_penalty()).add(1);
+        }
+        return 1;
+    },
+    achievement_bonus21:function(){
+        if (achievement.obtained[2][1] == true ) {
+            return 1.1;
+
         }
         return 1;
     },
@@ -1788,7 +1806,7 @@ var display = {
             
             document.getElementById("unlockBloodline").innerHTML= ' <button class="alchemy_milestone_button" onclick="openSecondTab(event,'+"'Bloodline'"+')">Bloodline</button>';
             if (bloodline.kinCount() >=2) { 
-                document.getElementById("siblingBond").innerHTML="Your <span style='font-size:36px'>"+bloodline.kinCount()+"</span> children are granting each other <span style='font-size:36px'>^"+format(bloodline.sibling_bond().toFixed(2))+"</span> to each other's bonds gain.";
+                document.getElementById("siblingBond").innerHTML="Your <span style='font-size:36px'>"+bloodline.kinCount()+"</span> children are granting each other <span style='font-size:36px'>^"+format(bloodline.sibling_bond().toFixed(2))+"</span> to each other's bonds gain and effect.";
             }
             for (bli=0;bli<bloodline.name.length;bli++) {
                 if (bloodline.check[bli] == true) {               
@@ -2330,6 +2348,8 @@ window.onload = function() {
 
 
 }
+
+
 setInterval(function() {
     save_game();
 
@@ -2378,7 +2398,6 @@ setInterval(function() { //display
     display.updateKingdom();
 
     display.updateDiplomacy();
-    console.log(prayer.danger);
     
 
     
@@ -2390,5 +2409,6 @@ setInterval(function() {
     display.updateTime();
     building.autopurchase();
     kingdom.autopurchasemk2();
+    timeout();
     
 },10)
