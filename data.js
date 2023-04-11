@@ -835,12 +835,30 @@ var musicplayer= {
     "Kuro no Kiseki II CRIMSON SiN - Boss Theme 1.mp3",
     "Rigel Theatre - Khaos.mp3",
     "Ys I Eternal - Final Battle but beat 2 and 4 are swapped.mp3"
-
-
-
-    ],
+],
+    active:true,
+    
+    status:function() {
+        if (this.active == true) {
+            return "On"
+        }
+        if (this.active == false) {
+            return "Off"
+        }
+    },
+    music_toggle:function() {
+        if (this.active == true) {
+            this.active = false;
+        }
+        else if (this.active == false) {
+            this.active = true;
+        }
+        console.log("did something");
+        display.updateMusicPlayer();
+}
     
 }
+
 //T1 prestige 
 platinum = new Decimal(0);
 platinum_multi = new Decimal(1);
@@ -991,7 +1009,10 @@ var prestigeT1 = {
         display.updatePrayerThreat();
         display.updateWife();
         display.updatePlatinum();
-        display.updateMusic(0);
+        if (musicplayer.active == true) {
+            display.updateMusic(0);
+        }
+        
     }
 
 }
@@ -1815,6 +1836,9 @@ var display = {
         }
         
     },
+    updateMusicPlayer:function(){
+        document.getElementById("soundtoggle").innerHTML = "<button class='button' onclick='musicplayer.music_toggle()'>Sound: "+musicplayer.status()+"</button>"; 
+    },
     updateStastistic:function() {
         document.getElementById("totalGold").innerHTML= "You have made a total of "+ format(total_gold) + " gold through out this journey";
         document.getElementById("prestigeTime").innerHTML="You have spent "+ format(game_prestige_time)+" second(s) in this prestige";
@@ -1907,6 +1931,9 @@ function rgb(r,g,b) {
 //save and reload
 function save_game() {
     var gameSave = {
+    //settings
+    save_music_settings:musicplayer.active,
+    //coregame
     save_gold : gold.toString(),
     save_totalGold:total_gold.toString(),
     save_glb_mul : global_mul.toString(),
@@ -1978,6 +2005,9 @@ function save_game() {
 function load_game() {
     var savedGame = JSON.parse(localStorage.getItem("game_save"));
     if(localStorage.getItem("game_save")!== null) {
+        //settings
+        if(typeof savedGame.save_music_settings!== "undefined") { musicplayer.active=savedGame.save_music_settings}
+        //
         if(typeof savedGame.save_prestige_time!== "undefined") {game_prestige_time = new Decimal(savedGame.save_prestige_time);}
         if(typeof savedGame.save_timer!== "undefined") {game.timer = savedGame.save_timer;}
         if(typeof savedGame.save_reverse!== "undefined") {game.reverse = savedGame.save_reverse;}
@@ -2164,6 +2194,9 @@ function import_game() {
 function load(loadGame) {
     var savedGame = loadGame;
     if(localStorage.getItem("game_save")!== null) {
+        //settings
+        if(typeof savedGame.save_music_settings!=="undefined") {musicplayer.active =savedGame.save_music_settings }
+        //coregame
         if(typeof savedGame.save_prestige_time!== "undefined") {game_prestige_time = new Decimal(savedGame.save_prestige_time);}
         if(typeof savedGame.save_timer!== "undefined") {game.timer = savedGame.save_timer;}
         if(typeof savedGame.save_reverse!== "undefined") {game.reverse = savedGame.save_reverse;}
@@ -2329,7 +2362,10 @@ window.onload = function() {
     display.updateGold();
     display.updateShop();
     display.updatePrayer();
-    display.updateMusic(0);
+    display.updateMusicPlayer();
+    if (musicplayer.active == true) {
+        display.updateMusic(0);
+    }
     display.updateWife();
     display.updateUpgrade();
     display.updateStastistic();
