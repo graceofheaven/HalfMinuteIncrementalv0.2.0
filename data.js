@@ -53,17 +53,7 @@ function wiferankIII() {
     else if (wife.level>=2) {return 30-game.timer}
     else return 1;
 }
-function timeout() {
-    if (game.timer == 0 && gold.lte(prayer_cost)&&prestigeT1_MS.platinum_obtained[0]==false) {
-        if (platinum.eq(0)) {
-        reset_game();
-        }else {
-            prestigeT1.resetT1();
-        }
 
-    }
-    
-}
 
 function k_seps(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
@@ -254,9 +244,17 @@ var game = {
             game.timer = (Math.round(game.timer * 100) - 1) / 100;
             
         }
+        
         if (prestigeT1_MS.platinum_obtained[0] == true && gold.gte(prayer_cost) && game.timer == 0) {
             prayer.pray();
         }
+        else if (gold.lte(prayer_cost) && game.timer==0 && prestigeT1_MS.platinum_obtained[0] == true) {
+            prestigeT1.resetT1();
+        }
+        if (prestigeT1_MS.platinum_obtained[0] == false && game.timer == 0) {
+            prestigeT1.resetT1();
+        }
+
         if (prayer.reverse == true) {
             game.timer = (Math.round(game.timer * 100) + 11) / 100;
             if (game.timer >= 30) {
@@ -2155,7 +2153,7 @@ function export_game() {
 
 }
 function import_game() {
-    let loadGame = json.parse(atob(document.getElementById("exportField").value));
+    let loadGame = JSON.parse(atob(document.getElementById("exportField").value));
     if (loadGame && loadGame!=null && loadGame!="") {
         reset_game();
         load(loadGame);
@@ -2409,6 +2407,5 @@ setInterval(function() {
     display.updateTime();
     building.autopurchase();
     kingdom.autopurchasemk2();
-    timeout();
     
 },10)
