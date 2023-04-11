@@ -2365,6 +2365,7 @@ setInterval(function() { //display
     display.updateShop();
     display.updateWife();
     display.updatePrayer();
+    display.updatePrayerThreat();
     
     display.updateUpgrade();
     display.updatePlatinum();
