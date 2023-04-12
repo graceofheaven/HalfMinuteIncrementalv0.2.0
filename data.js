@@ -836,7 +836,7 @@ var musicplayer= {
     "Rigel Theatre - Khaos.mp3",
     "Ys I Eternal - Final Battle but beat 2 and 4 are swapped.mp3"
 ],
-    active:true,
+    active:false,
     
     status:function() {
         if (this.active == true) {
