@@ -59,19 +59,40 @@ function k_seps(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 function format(number) {
+    
+    if (number.toString() == "undefined") {return undefined}
     if (number.toString() == "Infinity") {return Infinity}
     num = new Decimal(number);
     bottom = 10**(num.mag - Math.floor(num.mag));
+    non_rep_bottom = 10**(Math.log10(num.mag) - Math.floor(Math.log10(num.mag)))
     rep = num.layer;
-    if (rep>1) {
-        return "10<sup>".repeat(rep-1)+k_seps(Math.floor(num.mag))+"</sup>".repeat(rep-1);
+    if (settings.format_style == 0) {
+        if (rep>1) {
+        return "10<sup>".repeat(rep-1)+bottom+"*10<sup>"+k_seps(Math.floor(num.mag))+"</sup>".repeat(rep);
 
     }
-    if (rep==1) {
+        if (rep==1) {
         return bottom.toFixed(2)+"*10<sup>".repeat(rep)+k_seps(Math.floor(num.mag))+"</sup>".repeat(rep);
 
     }
-    else return k_seps(num);
+        else return k_seps(num);
+    }
+    if (settings.format_style == 1) {
+        if (rep>=1 && num.mag<1e6) {
+            return "10<sup>".repeat(rep)+non_rep_bottom+"*10<sup>"+k_seps(Math.floor(num.mag))+"</sup>".repeat(rep+1);
+    
+        }else if(rep>=1 && num.mag>=1e6){
+            return non_rep_bottom.toFixed(2)+"*10<sup>".repeat(rep)+(Math.floor(num.mag))+"</sup>".repeat(rep);
+        }
+        if (num.mag>=1e6 && rep<1) {
+            return non_rep_bottom.toFixed(2)+"*10<sup>".repeat(rep+1)+k_seps(Math.floor(Math.log10(num.mag)))+"</sup>".repeat(rep+1);
+    
+        }
+        else return k_seps(num);
+
+    }
+    
+    
 
 }
 function prestigeT1_MS3() {
@@ -157,11 +178,29 @@ var building = {
             if (new Decimal(building.count[index]).eq(0)) {
                 building.cur_tier++;
             }
-            if (wife.level < 3) {
-                gold = gold.sub(new Decimal(this.cost[index]));
+            if (building.purchase_counter ==0) {
+                if (wife.level < 3) {
+                    gold = gold.sub(new Decimal(this.cost[index]));
+                }
+                building.count[index] = building.count[index].add(1);
+                building.cost[index] = building.cost[index].mul(1.1).round();
             }
-            building.count[index] = building.count[index].add(1);
-            building.cost[index] = building.cost[index].mul(1.1).round();
+            if (building.purchase_counter ==1) {
+                for (ci=0;ci<10;ci++) {
+                    if (wife.level < 3) {
+                        gold = gold.sub(new Decimal(this.cost[index]));
+                        if (gold.lte(this.cost[index])) {
+                            break;
+                        }
+                    }
+                    building.count[index] = building.count[index].add(1);
+                    building.cost[index] = building.cost[index].mul(1.1).round();
+                }
+                
+            }
+            if (building.purchase_counter == 2) {
+                this.max_purchase()
+            }
             
             display.updateShop();
             display.updateGold();
@@ -175,8 +214,8 @@ var building = {
             }
             purchasable_count = Decimal.affordGeometricSeries(gold,this.base_cost[index],1.1,building.count[index]).round();
             cost_increase = Decimal.sumGeometricSeries(purchasable_count,this.base_cost[index],1.1,building.count[index]).round();
-            building.cost[index] = building.cost[index].add(cost_increase);
-            building.count[index] = building.count[index].add(purchasable_count);
+            building.cost[index] = reboot_decimal(building.cost[index]).add(cost_increase);
+            building.count[index] = reboot_decimal(building.count[index]).add(purchasable_count);
             
             if (wife.level < 3) {
                 gold = gold.sub(new Decimal(cost_increase));
@@ -184,6 +223,27 @@ var building = {
 
         }
 
+    },
+    purchase_mode_price: function(index) {
+        if (building.purchase_counter==0) {
+            return reboot_decimal(building.cost[index]).round();
+        }
+        if (building.purchase_counter==1) {
+            b10c = reboot_decimal(building.cost[index]);
+            temp_cost = reboot_decimal(0);
+            for (bti =0;bti<10;bti++) {
+                
+                if (temp_cost.add(b10c).gt(gold)) {break;}
+                temp_cost = temp_cost.add(b10c);
+                b10c = b10c.mul(1.1);
+            }
+            return reboot_decimal(temp_cost.round());
+        }
+        if (building.purchase_counter==2) {
+            purchasable_count = Decimal.affordGeometricSeries(gold,this.base_cost[index],1.1,building.count[index]).round();
+            cost_increase = Decimal.sumGeometricSeries(purchasable_count,this.base_cost[index],1.1,building.count[index]).round();
+            return (cost_increase);
+        }
     },
     autopurchase:function() {
         if (prestigeT1_MS.platinum_obtained[2] == true && this.auto_building == true && wife.level <3) {
@@ -233,12 +293,39 @@ var building = {
 
         }
         return TB;
+    },
+    purchase_counter: 0,
+    purchase_switch: function() {
+        if (this.purchase_counter==0) {
+            this.purchase_counter=1;
+        }
+        else if (this.purchase_counter==1) {
+            this.purchase_counter=2;
+        }
+        else if (this.purchase_counter==2) {
+            this.purchase_counter=0;
+        }
+        console.log("did something");
+        display.updateShop();
+    },
+    purchase_mode_txt:function() {
+        if (this.purchase_counter==0) {
+            return "x1";
+        }
+        if (this.purchase_counter==1) {
+            return "x10";
+        }
+        if (this.purchase_counter==2) {
+            return "Max";
+        }
     }
 
 }
+
 var game = {
     reverse:false,
     timer:30,
+    pause:false,
     countdown:function () {
         if (game.timer >=0.01 && prayer.reverse == false) {
             game.timer = (Math.round(game.timer * 100) - 1) / 100;
@@ -263,7 +350,91 @@ var game = {
             }
         }
     },
+    toggle_pause:function() {
+        if (game.pause == false) {
+            game.pause = true;
+        } else {
+            game.pause = false;
+        }
+        display.updatePause();
+    },
+    pause_image:function() {
+        if (game.pause == true) {
+            return "play";
+        }
+        if (game.pause == false) {
+            return "pause";
+        }
+
+    },
 }
+//settings
+var settings={
+    game_theme:0,
+    prev_theme:1,
+    theme_display:function(index) {
+        if (index== 0) {
+            return "background";
+        }
+        if (index==1) {
+            return "dark_mode";
+        }
+
+    },
+    theme_switch:function() {
+        if (this.game_theme == 0) {
+            this.prev_theme =this.game_theme;
+            this.game_theme = 1;
+            
+        } 
+        else if (this.game_theme == 1) {
+            this.prev_theme = this.game_theme;
+            this.game_theme = 0;
+        }
+        document.body.classList.toggle(this.theme_display(this.prev_theme));
+        document.body.classList.toggle(this.theme_display(this.game_theme));
+        
+        
+        display.updateTheme();
+    },
+    theme_name:function(index) {
+        if (index==0) {
+            return "Light";
+        }
+        else if (index==1) {
+            return "Dark";
+        }
+
+    },
+    text_color:function(index) {
+        if (index ==0) {
+            return "black";
+        }
+        else if (index ==1 ){
+            return "gray";
+        }
+
+    },
+    //format style
+    format_style:0,
+    switch_format:function() {
+        if (this.format_style == 0) {
+            this.format_style = 1
+        }else if(this.format_style ==1) {
+            this.format_style = 0;
+        }
+        display.updateFormatStyle()
+    },
+    format_name:function() {
+        if (this.format_style == 0) {
+            return "Normal";
+        }
+        if (this.format_style ==1) {
+            return "Shorthand"
+        }
+    }
+}
+//prayer
 prayer_cost = new Decimal(100);
 var prayer = {
     reverse :false,
@@ -279,6 +450,7 @@ var prayer = {
     ],
 
     pray:function() {
+        if (game.reverse == false) {
         
          if (gold.gte(prayer_cost)) {
                 gold= gold.sub(prayer_cost)
@@ -310,6 +482,7 @@ var prayer = {
             display.updateGold();
             
          }
+        }
         }
         
 
@@ -360,7 +533,7 @@ var prayer = {
             TPC = TPC.add(prayer.count[tpci]);
         }
         return TPC;
-    }
+    },
 }   
     
 wife_willpower=new Decimal(0);
@@ -831,6 +1004,7 @@ var upgrade = {
 }
 //music player
 var musicplayer= {
+    target_id: 0,
     name:["Half-Minute Hero - Desperate Strike (Extended).mp3",
     "Kuro no Kiseki II CRIMSON SiN - Boss Theme 1.mp3",
     "Rigel Theatre - Khaos.mp3",
@@ -851,8 +1025,8 @@ var musicplayer= {
         else if (this.active == false) {
             this.active = true;
         }
-        console.log("did something");
         display.updateMusicPlayer();
+        display.updateMusic(musicplayer.target_id);
     
     },
     music_check:function() {
@@ -1016,7 +1190,7 @@ var prestigeT1 = {
         display.updatePrayerThreat();
         display.updateWife();
         display.updatePlatinum();
-        display.updateMusic(0);
+        display.updateMusic(musicplayer.target_id);
         
     }
 
@@ -1067,9 +1241,8 @@ var prestigeT1_MS = {
     PrT1_MS3:function() {
         if (prestigeT1_MS.platinum_obtained[3]== true) {
             TMU = new Decimal(1);
-            for (i=0;i<building.multi.length;i++) {
-                temp = new Decimal(building.multi[i]);
-                TMU = TMU.mul(this.PrT1_MS5(temp));
+            for (i=0;i<upgrade.name.length;i++) {
+                TMU = TMU.mul(this.PrT1_MS5(reboot_decimal(upgrade.upgradeMulti(i))));
             }
             if (TMU.lte(1)) {
                 return 1;
@@ -1752,20 +1925,33 @@ var display = {
     },
     updateShop: function() {
         document.getElementById("shopContainer").innerHTML = ""
+        document.getElementById("purchaseMode").innerHTML="";
         if (wife.level < 3) {
+            document.getElementById("purchaseMode").innerHTML="<button class='standard' style:'font-weight:bold' onclick='building.purchase_switch()'>Buy mode:"+building.purchase_mode_txt()+"</button>"
+
             for (i=0; i<=building.cur_tier; i++) {
             if (i>=8) {
                 break;
             }
-            document.getElementById("shopContainer").innerHTML += '<table class=" shop_container" onclick="building.purchase('+i+')"><tr><td id="image"><img src="ingame_pic/'+building.image[i]+'"></td><td id="nameandCost"><p>'+building.name[i]+'</p><p><span>'+format(building.cost[i])+'</span> gold</p></td><td id="gps"><p>'+format(getIndexGPS(i))+' GPS</p></td><td id="amount"><span>'+format(building.count[i])+'</span></td></tr></table>';
+            document.getElementById("shopContainer").innerHTML += '<table class=" shop_container" onclick="building.purchase('+i+')"><tr><td id="image"><img src="ingame_pic/'+building.image[i]+'"></td><td id="nameandCost"><p>'+building.name[i]+'</p><p><span>'+format(building.purchase_mode_price(i))+'</span> gold</p></td><td id="gps"><p>'+format(getIndexGPS(i))+' GPS</p></td><td id="amount"><span>'+format(building.count[i])+'</span></td></tr></table>';
         }
 
         }
         
 
     },
+    //settings
+    updateTheme:function() {
+        document.getElementById("displaytheme").innerHTML = '<button class="standard" onclick ="settings.theme_switch()">Theme: '+settings.theme_name(settings.game_theme)+'</button>'
+        
+    },
+    updateFormatStyle:function() {
+        document.getElementById("formatStyle").innerHTML ='<button class="standard" onclick = "settings.switch_format()">Number format style:'+settings.format_name()+'</button>'
+
+    },
+    //prayers
     updatePrayer:function() {
-        document.getElementById("Prayer").innerHTML = '<table class="pray_container '+prayer.warning()+'" onclick="prayer.pray()"><tr><td id="image"><img src="ingame_pic/'+prayer.img+'"></td><td id="nameandCost"><p>'+prayer.last_prayer_trigger()+'</p><p><span>'+format(prayer_cost)+'</span> gold</p></td></table>'
+        document.getElementById("Prayer").innerHTML = '<table class="pray_container '+prayer.warning()+'" onclick="prayer.pray()" style="color:black"><tr><td id="image"><img src="ingame_pic/'+prayer.img+'"></td><td id="nameandCost"><p>'+prayer.last_prayer_trigger()+'</p><p><span>'+format(prayer_cost)+'</span> gold</p></td></table>'
     },
     updatePrayerThreat:function() {
         document.getElementById("PrayerThreat").innerHTML = prayer.threat[prayer.danger];
@@ -1775,9 +1961,20 @@ var display = {
         else document.getElementById("autoBuilding").innerHTML = '<table class=" auto_container" onclick="building.toggle_autopurchase()"><tr><td id="image"><img src="ingame_pic/cog_autobuild.png"></td><td id="nameandCost"><p>Auto-purchase buildings</p><p>'+building.check_autobuilding()+'</p></td></table>'
         if (wife.level >= 3){document.getElementById("autoBuilding").innerHTML = ""}
     },
+    //timer
     updateTime: function() {
         document.getElementById("timer").innerHTML = game.timer.toFixed(2);
-        document.getElementById("timer").style.color = rgb(((30-game.timer)/45)*255,0,0)
+        if (settings.game_theme==0) {
+            document.getElementById("timer").style.color = rgb(((30-game.timer)/45)*255,0,0)
+        }
+        if (settings.game_theme==1) {
+            document.getElementById("timer").style.color = rgb(255,255-(((30-game.timer)/45)*255),255-(((30-game.timer)/45)*255))
+        }
+        
+    },
+    //pauser
+    updatePause:function(){
+        document.getElementById("pauseButton").innerHTML = "<table class='pause_button'><tr><td onclick='game.toggle_pause()'><img src='ingame_pic/"+game.pause_image()+".png' width='32' height='32'></td></tr></table>"
     },
     updateMusic:function(index) {
         document.getElementById("musicPlayer").innerHTML='<audio id="musicPlayer" controls '+musicplayer.music_check()+' loop><source src ="bg_music/'+musicplayer.name[index]+'" type="audio/mp3"></audio><p style="font-family:Georgia"> Playing: '+musicplayer.name[index]+'</p>'
@@ -1845,6 +2042,8 @@ var display = {
         document.getElementById("soundtoggle").innerHTML = "<button class='button' onclick='musicplayer.music_toggle()'>Sound: "+musicplayer.status()+"</button>"; 
     },
     updateStastistic:function() {
+        document.getElementById("statistic").style.color="gray";
+
         document.getElementById("totalGold").innerHTML= "You have made a total of "+ format(total_gold) + " gold through out this journey";
         document.getElementById("prestigeTime").innerHTML="You have spent "+ format(game_prestige_time)+" second(s) in this prestige";
         document.getElementById("prestigeAmount").innerHTML="You have prestiged "+ format(prestigeT1.prestige_time)+" time(s) through out this journey";
@@ -1938,6 +2137,9 @@ function save_game() {
     var gameSave = {
     //settings
     save_music_settings:musicplayer.active,
+    save_game_theme:settings.game_theme,
+    save_format_style:settings.format_style,
+    save_prev_theme:settings.prev_theme,
     //coregame
     save_gold : gold.toString(),
     save_totalGold:total_gold.toString(),
@@ -2012,7 +2214,10 @@ function load_game() {
     if(localStorage.getItem("game_save")!== null) {
         //settings
         if(typeof savedGame.save_music_settings!== "undefined") { musicplayer.active=savedGame.save_music_settings}
-        //
+        if(typeof savedGame.save_format_style!=="undefined") {settings.format_style = savedGame.save_format_style};
+        if (typeof savedGame.save_game_theme!=="undefined") {settings.game_theme = savedGame.save_game_theme};
+        if (typeof savedGame.save_prev_theme!=="undefined") {settings.prev_theme = savedGame.save_prev_theme};
+        //coregame
         if(typeof savedGame.save_prestige_time!== "undefined") {game_prestige_time = new Decimal(savedGame.save_prestige_time);}
         if(typeof savedGame.save_timer!== "undefined") {game.timer = savedGame.save_timer;}
         if(typeof savedGame.save_reverse!== "undefined") {game.reverse = savedGame.save_reverse;}
@@ -2201,6 +2406,9 @@ function load(loadGame) {
     if(localStorage.getItem("game_save")!== null) {
         //settings
         if(typeof savedGame.save_music_settings!=="undefined") {musicplayer.active =savedGame.save_music_settings }
+        if(typeof savedGame.save_format_style!=="undefined") {settings.format_style = savedGame.save_format_style};
+        if (typeof savedGame.save_game_theme!=="undefined") {settings.game_theme = savedGame.save_game_theme};
+        if (typeof savedGame.save_prev_theme!=="undefined") {settings.prev_theme = savedGame.save_prev_theme};
         //coregame
         if(typeof savedGame.save_prestige_time!== "undefined") {game_prestige_time = new Decimal(savedGame.save_prestige_time);}
         if(typeof savedGame.save_timer!== "undefined") {game.timer = savedGame.save_timer;}
@@ -2367,9 +2575,14 @@ window.onload = function() {
     display.updateGold();
     display.updateShop();
     display.updatePrayer();
+    //settings
     display.updateMusicPlayer();
+    document.body.classList.toggle(settings.theme_display(settings.game_theme));
+    display.updateTheme();
+    display.updateFormatStyle();
+    display.updatePause();
 
-    display.updateMusic(0);
+    display.updateMusic(musicplayer.target_id);
     display.updateWife();
     display.updateUpgrade();
     display.updateStastistic();
@@ -2399,6 +2612,7 @@ document.addEventListener("keydown",function(event){
     }
  }) 
 setInterval(function() {
+    if (game.pause == false) {
     gold = gold.add(getGPS());
     total_gold = total_gold.add(getGPS());
     wife.stronger_than_you();
@@ -2415,14 +2629,13 @@ setInterval(function() {
         diplomacy.all_diplomacy_strengthen();
     };
 
-    
+    }
 
 },1000)
 setInterval(function() { //display
     display.updateGold();
     display.updateShop();
     display.updateWife();
-    display.updatePrayer();
     display.updatePrayerThreat();
     
     display.updateUpgrade();
@@ -2443,9 +2656,11 @@ setInterval(function() { //display
 
 },1000)
 setInterval(function() {
+    if (game.pause == false) {
     game.countdown();
     display.updateTime();
     building.autopurchase();
     kingdom.autopurchasemk2();
+    }
     
 },10)

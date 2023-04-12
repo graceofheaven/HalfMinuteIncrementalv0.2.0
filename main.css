@@ -1,10 +1,13 @@
 .background {
     background-color: rgb(255, 255, 255);
-
 }
+.dark_mode{
+    background-color: rgb(31, 31, 31);
+}
+
 .sectionLeft {
     float:left;
-    width:60vw
+    width:55vw
     
 }
 .sectionRight {
@@ -32,7 +35,6 @@
     flex-direction: column;
 }
 .timer_container {
-    background-color: rgb(255, 255, 255);
     text-align: center;
     font-family: Georgia;
     font-size: 64px;
@@ -584,8 +586,13 @@
     font-size: 32px;
     font-weight: bold;
 }
-
-
+/*pause button*/
+.pause_button {
+    position:absolute;
+    right:0;
+    background-color: gray;
+    border-radius: 5px 0px 0px 5px;
+}
 /*miscellanous*/
 .button {
     font-family:Georgia;
