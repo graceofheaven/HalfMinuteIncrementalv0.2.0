@@ -842,9 +842,7 @@ var musicplayer= {
         if (this.active == true) {
             return "On"
         }
-        if (this.active == false) {
-            return "Off"
-        }
+        return "Off"
     },
     music_toggle:function() {
         if (this.active == true) {
@@ -855,7 +853,15 @@ var musicplayer= {
         }
         console.log("did something");
         display.updateMusicPlayer();
-}
+    
+    },
+    music_check:function() {
+        if (this.active == true) {
+            return "autoplay"
+
+        }
+        return "";
+    }
     
 }
 
@@ -887,8 +893,9 @@ var prestigeT1 = {
     ],
     formulaLvl:0,
     formula:[
-        "(x+1)<sup>2</sup>"
-
+        "(x+1)<sup>2</sup>",
+        "",
+        "",
     ],
     unlock_ach_milestone:false,
     prestige_time:0,
@@ -1009,9 +1016,7 @@ var prestigeT1 = {
         display.updatePrayerThreat();
         display.updateWife();
         display.updatePlatinum();
-        if (musicplayer.active == true) {
-            display.updateMusic(0);
-        }
+        display.updateMusic(0);
         
     }
 
@@ -1775,7 +1780,7 @@ var display = {
         document.getElementById("timer").style.color = rgb(((30-game.timer)/45)*255,0,0)
     },
     updateMusic:function(index) {
-        document.getElementById("musicPlayer").innerHTML='<audio id="musicPlayer" controls autoplay loop><source src ="bg_music/'+musicplayer.name[index]+'" type="audio/mp3"></audio><p style="font-family:Georgia"> Playing: '+musicplayer.name[index]+'</p>'
+        document.getElementById("musicPlayer").innerHTML='<audio id="musicPlayer" controls '+musicplayer.music_check()+' loop><source src ="bg_music/'+musicplayer.name[index]+'" type="audio/mp3"></audio><p style="font-family:Georgia"> Playing: '+musicplayer.name[index]+'</p>'
 
     },
     updateWife:function() {
@@ -2363,9 +2368,8 @@ window.onload = function() {
     display.updateShop();
     display.updatePrayer();
     display.updateMusicPlayer();
-    if (musicplayer.active == true) {
-        display.updateMusic(0);
-    }
+
+    display.updateMusic(0);
     display.updateWife();
     display.updateUpgrade();
     display.updateStastistic();
