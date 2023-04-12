@@ -78,11 +78,11 @@ function format(number) {
         else return k_seps(num);
     }
     if (settings.format_style == 1) {
-        if (rep>=1 && num.mag<1e6) {
-            return "10<sup>".repeat(rep)+non_rep_bottom+"*10<sup>"+k_seps(Math.floor(num.mag))+"</sup>".repeat(rep+1);
+        if (rep>=1 && num.mag<1e9) {
+            return "10<sup>".repeat(rep-1)+non_rep_botto.toFixed(2)+"*10<sup>"+k_seps(Math.floor(num.mag))+"</sup>".repeat(rep);
     
-        }else if(rep>=1 && num.mag>=1e6){
-            return non_rep_bottom.toFixed(2)+"*10<sup>".repeat(rep)+(Math.floor(num.mag))+"</sup>".repeat(rep);
+        }else if(rep>=1 && num.mag>=1e9){
+            return "10<sup>".repeat(rep-1)+non_rep_bottom.toFixed(2)+"*10<sup>"+(Math.floor(num.mag))+"</sup>".repeat(rep);
         }
         if (num.mag>=1e6 && rep<1) {
             return non_rep_bottom.toFixed(2)+"*10<sup>".repeat(rep+1)+k_seps(Math.floor(Math.log10(num.mag)))+"</sup>".repeat(rep+1);
