@@ -189,10 +189,9 @@ var building = {
                     
                     if (wife.level < 3) {
                         if (gold.lt(building.cost[index])) {
-                            console.log("did something")
                             break;
                         }
-                        gold = gold.sub(new Decimal(building.cost[index]));
+                        gold = gold.sub(new Decimal(building.cost[index]).round());
                         
                     }
                     building.count[index] = reboot_decimal(building.count[index]).add(1);
@@ -211,7 +210,6 @@ var building = {
     },
     max_purchase:function(index) {
             purchasable_count = Decimal.affordGeometricSeries(gold,this.base_cost[index],1.1,building.count[index]).round();
-            console.log(purchasable_count);
             max_cost = Decimal.sumGeometricSeries(purchasable_count,this.base_cost[index],1.1,building.count[index]).round();
         if (gold.gte(max_cost)) {
             if (reboot_decimal(building.count[index]).eq(0)) {
@@ -238,7 +236,6 @@ var building = {
             temp_cost = reboot_decimal(0);
             for (bti =0;bti<10;bti++) {
                 
-                if (temp_cost.add(b10c).gt(gold)) {break;}
                 temp_cost = temp_cost.add(b10c);
                 b10c = b10c.mul(1.1);
             }
@@ -2608,7 +2605,7 @@ window.onload = function() {
 setInterval(function() {
     save_game();
 
-},3000000)
+},30000)
 document.addEventListener("keydown",function(event){
     if( event.ctrlKey && event.code==83) { //ctrl + s
      event.preventDefault();
