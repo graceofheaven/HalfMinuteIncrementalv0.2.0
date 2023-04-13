@@ -86,7 +86,6 @@ function format(number) {
         }
         if (num.mag>=1e6 && rep<1) {
             return non_rep_bottom.toFixed(2)+"*10<sup>".repeat(rep+1)+k_seps(Math.floor(Math.log10(num.mag)))+"</sup>".repeat(rep+1);
-    
         }
         else return k_seps(num);
 
@@ -187,19 +186,22 @@ var building = {
             }
             if (building.purchase_counter ==1) {
                 for (ci=0;ci<10;ci++) {
+                    
                     if (wife.level < 3) {
-                        gold = gold.sub(new Decimal(this.cost[index]));
-                        if (gold.lte(this.cost[index])) {
+                        if (gold.lt(building.cost[index])) {
+                            console.log("did something")
                             break;
                         }
+                        gold = gold.sub(new Decimal(building.cost[index]));
+                        
                     }
-                    building.count[index] = building.count[index].add(1);
-                    building.cost[index] = building.cost[index].mul(1.1).round();
+                    building.count[index] = reboot_decimal(building.count[index]).add(1);
+                    building.cost[index] = reboot_decimal(building.cost[index]).mul(1.1).round();
                 }
                 
             }
             if (building.purchase_counter == 2) {
-                this.max_purchase()
+                this.max_purchase(index)
             }
             
             display.updateShop();
@@ -208,18 +210,21 @@ var building = {
         }
     },
     max_purchase:function(index) {
-        if (gold.gte(new Decimal(building.cost[index]))) {
-            if (new Decimal(building.count[index]).eq(0)) {
+            purchasable_count = Decimal.affordGeometricSeries(gold,this.base_cost[index],1.1,building.count[index]).round();
+            console.log(purchasable_count);
+            max_cost = Decimal.sumGeometricSeries(purchasable_count,this.base_cost[index],1.1,building.count[index]).round();
+        if (gold.gte(max_cost)) {
+            if (reboot_decimal(building.count[index]).eq(0)) {
                 building.cur_tier++;
             }
-            purchasable_count = Decimal.affordGeometricSeries(gold,this.base_cost[index],1.1,building.count[index]).round();
-            cost_increase = Decimal.sumGeometricSeries(purchasable_count,this.base_cost[index],1.1,building.count[index]).round();
-            building.cost[index] = reboot_decimal(building.cost[index]).add(cost_increase);
+            if (wife.level < 3) {
+                gold = gold.sub(max_cost);
+            }
+            building.cost[index] = reboot_decimal(max_cost).mul(1.1);
+            
             building.count[index] = reboot_decimal(building.count[index]).add(purchasable_count);
             
-            if (wife.level < 3) {
-                gold = gold.sub(new Decimal(cost_increase));
-            }
+            
 
         }
 
@@ -305,7 +310,6 @@ var building = {
         else if (this.purchase_counter==2) {
             this.purchase_counter=0;
         }
-        console.log("did something");
         display.updateShop();
     },
     purchase_mode_txt:function() {
